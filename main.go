@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"net/http/cgi"
+	"net/http/fcgi"
 	"net/http/httputil"
 	"net/url"
 
@@ -35,6 +37,19 @@ func main() {
 	client := &http.Client{}
 	fmt.Printf("HTTP client created: %v\n", client)
 
+	// Using net/http/cgi and net/http/fcgi (vulnerable to GO-2021-0226 - XSS vulnerability)
+	// These packages have XSS vulnerability when Content-Type header is not set
+	cgiHandler := &cgi.Handler{
+		Path: "/usr/bin/env",
+	}
+	fmt.Printf("CGI handler created: %v\n", cgiHandler)
+
+	// Create a simple http handler that uses fcgi
+	http.HandleFunc("/fcgi", func(w http.ResponseWriter, r *http.Request) {
+		fcgi.ProcessEnv(r)
+	})
+	fmt.Println("FCGI handler registered")
+
 	// Using vulnerable external dependencies
 	_ = gin.Default()
 	_ = websocket.Upgrader{}
@@ -44,7 +59,8 @@ func main() {
 	data := struct{ Name string }{Name: "test"}
 	_, _ = yaml.Marshal(&data)
 
-	fmt.Println("This project uses Go 1.17 stdlib which has known vulnerabilities")
-	fmt.Println("Dependabot should detect: GO-2022-0434, GO-2022-0435, GO-2022-0520, etc.")
-	fmt.Println("Also includes vulnerable external dependencies from 2019-2021")
+	fmt.Println("This project uses Go 1.15.0 stdlib which has known vulnerabilities")
+	fmt.Println("TARGET: GO-2021-0226 - XSS vulnerability in net/http/cgi and net/http/fcgi")
+	fmt.Println("Also vulnerable to: GO-2022-0434, GO-2022-0435, GO-2022-0520, etc.")
+	fmt.Println("Plus vulnerable external dependencies from 2019-2021")
 }
