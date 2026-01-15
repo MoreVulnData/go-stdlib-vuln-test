@@ -7,6 +7,12 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/net/html"
+	"gopkg.in/yaml.v2"
 )
 
 func main() {
@@ -29,6 +35,16 @@ func main() {
 	client := &http.Client{}
 	fmt.Printf("HTTP client created: %v\n", client)
 
+	// Using vulnerable external dependencies
+	_ = gin.Default()
+	_ = websocket.Upgrader{}
+	_, _ = bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+	_ = html.NewTokenizer(nil)
+
+	data := struct{ Name string }{Name: "test"}
+	_, _ = yaml.Marshal(&data)
+
 	fmt.Println("This project uses Go 1.17 stdlib which has known vulnerabilities")
 	fmt.Println("Dependabot should detect: GO-2022-0434, GO-2022-0435, GO-2022-0520, etc.")
+	fmt.Println("Also includes vulnerable external dependencies from 2019-2021")
 }
